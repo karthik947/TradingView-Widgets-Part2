@@ -1,0 +1,94 @@
+<html>
+<head>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body>
+<select onChange="refreshPairs();" id="exchanges"></select>
+<select onChange="LoadCharts();" id="pairs"></select>
+<br>
+<div class="tradingview-widget-container" id="tvchart"></div>
+</body>
+<script>
+var E=[],EP=[];
+    
+//PASS ALL THE SYMBOLS
+request('GET','http://127.0.0.1:9665/fetchAPI?endpoint=https://api.cryptowat.ch/markets')
+.then(r1 => {
+    let dataJ = JSON.parse(r1.target.responseText),markupE='',markupP='';
+    dataJ.result.forEach(d => {
+        EP.push({exchange:d.exchange.toUpperCase(),pair:d.pair.toUpperCase()});
+        if(E.indexOf(d.exchange.toUpperCase()) === -1){E.push(d.exchange.toUpperCase())}
+    });
+    //LOAD THEM
+    //DEFAULT -> BINANCE EXCHANGE
+    E.sort();
+    EP.sort((a, b) => a.pair.localeCompare(b.pair));
+    E.forEach((d,i) => {
+        if(d === 'BINANCE'){
+            markupE += '<option value="' + d + '" selected>' + d + '</option>';
+        }
+        else{
+            markupE += '<option value="' + d + '">' + d + '</option>';
+        }
+    });
+    
+    EP.forEach((d,i) => {
+        if(d.exchange === 'BINANCE'){
+           markupP += '<option value="' + d.pair + '">' + d.pair + '</option>';
+        }
+    });
+    
+    document.getElementById('exchanges').innerHTML = markupE;
+    document.getElementById('pairs').innerHTML = markupP;
+    LoadCharts();
+})
+.catch(e => {
+    console.log(e);
+})
+  
+function LoadCharts(){
+    let exchange = document.getElementById('exchanges').value;
+    let symbol = document.getElementById('pairs').value;
+    //RENDER CHART
+    new TradingView.widget(
+      {
+  "autosize": true,
+  "symbol": exchange + ':' + symbol,
+  "interval": "5",
+  "timezone": "Asia/Kolkata",
+  "theme": "Light",
+  "style": "1",
+  "locale": "in",
+  "toolbar_bg": "#f1f3f6",
+  "enable_publishing": false,
+  "allow_symbol_change": true,
+  "studies": [
+    "RSI@tv-basicstudies"
+  ],
+  "container_id": "tvchart"
+    });
+}
+    
+function refreshPairs(){
+    let exchange = document.getElementById('exchanges').value,markupP='';
+    EP.forEach((d,i) => {
+        if(d.exchange === exchange){
+           markupP += '<option value="' + d.pair + '">' + d.pair + '</option>';
+        }
+    });
+    document.getElementById('pairs').innerHTML = markupP;
+    LoadCharts();
+}
+    
+function request(method, url) {
+    return new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(method, url);
+        xhr.onload = resolve;
+        xhr.onerror = reject;
+        xhr.send();
+    });
+}
+    
+</script>
+</html>
